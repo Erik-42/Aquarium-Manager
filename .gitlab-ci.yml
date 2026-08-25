@@ -1,0 +1,8 @@
+include:
+  - project: basille/infra/cicd-bootstrap
+    file: /templates/gitlab-ci.app.yml
+    ref: main
+
+variables:
+  APP_NAME: aquarium-manager
+  STAGING_HOST_PORT: "8090"
