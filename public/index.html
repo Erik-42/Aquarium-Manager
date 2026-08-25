@@ -1,32 +1,236 @@
 <!DOCTYPE html>
-<html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Basille skeleton</title>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a1628">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Verwalte deine Aquarien, Wasserwerte, Fische und Termine">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>🐠 Aquarien Manager</title>
+    
     <style>
-      :root {
-        color-scheme: dark;
-      }
-      body {
-        font-family: system-ui, sans-serif;
-        margin: 0;
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        background: #12141a;
-        color: #e8e6e3;
-      }
-      main {
-        max-width: 36rem;
-        padding: 2rem;
-      }
+        :root {
+            --bg: #0a1628;
+            --card: #132337;
+            --card2: #1a3a5c;
+            --primary: #00d4aa;
+            --secondary: #0891b2;
+            --danger: #ef4444;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --dark: #64748b;
+            --border: #1e3a5f;
+            --input: #0f1f36;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        html, body { height:100%; overflow:hidden; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; }
+
+        .app { height:100%; display:flex; flex-direction:column; }
+
+        .header { padding:48px 16px 14px; background:var(--card); border-bottom:1px solid var(--border); flex-shrink:0; }
+        .header-row { display:flex; justify-content:space-between; align-items:center; }
+        .header h1 { font-size:22px; font-weight:700; }
+        .header p { font-size:12px; color:var(--muted); margin-top:2px; }
+        .backup-btn { background:var(--input); border:1px solid var(--border); color:var(--muted); padding:8px 12px; border-radius:8px; font-size:11px; }
+
+        .content { flex:1; overflow-y:auto; padding:12px 14px 100px; -webkit-overflow-scrolling:touch; }
+
+        .card { background:var(--card); border-radius:14px; margin-bottom:10px; border:1px solid var(--border); overflow:hidden; }
+        .card-head { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; cursor:pointer; }
+        .card-left { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+        .arrow { font-size:10px; color:var(--primary); transition:transform .2s; }
+        .card.open .arrow { transform:rotate(90deg); }
+        .aq-name { font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .aq-info { font-size:11px; color:var(--muted); }
+        .badge { background:rgba(8,145,178,.25); padding:3px 7px; border-radius:6px; font-size:10px; color:var(--secondary); font-weight:600; }
+        .card-body { display:none; padding:0 14px 14px; border-top:1px solid var(--border); }
+        .card.open .card-body { display:block; }
+
+        .stats { padding-top:12px; margin-bottom:14px; }
+        .stats-date { font-size:10px; color:var(--dark); margin-bottom:8px; }
+        .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+        .stat { background:var(--input); padding:7px; border-radius:8px; text-align:center; }
+        .stat-val { font-size:15px; font-weight:700; }
+        .stat-lbl { font-size:8px; color:var(--muted); text-transform:uppercase; margin-top:1px; }
+
+        .chart-sec { margin-bottom:14px; }
+        .tabs { display:flex; gap:5px; overflow-x:auto; padding-bottom:8px; }
+        .tabs::-webkit-scrollbar { display:none; }
+        .tab { padding:5px 10px; border-radius:12px; background:var(--input); border:none; color:var(--muted); font-size:10px; font-weight:600; white-space:nowrap; }
+        .tab.on { background:var(--primary); color:var(--bg); }
+        .chart-box { background:var(--input); border-radius:10px; padding:10px; height:160px; position:relative; }
+        .no-data { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--dark); font-size:11px; }
+
+        .sec { margin-bottom:14px; }
+        .sec-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+        .sec-title { font-size:13px; font-weight:600; }
+        .add-btn { padding:5px 10px; border-radius:8px; background:rgba(0,212,170,.15); border:none; color:var(--primary); font-size:10px; font-weight:600; }
+
+        .item { display:flex; justify-content:space-between; align-items:center; padding:9px 10px; background:var(--input); border-radius:8px; margin-bottom:5px; font-size:12px; }
+        .fish-n { color:var(--primary); font-weight:600; }
+        .del { color:var(--dark); font-size:14px; padding:4px 6px; margin:-4px -6px -4px 0; }
+        .chk { font-size:16px; color:var(--dark); margin-right:8px; }
+        .chk.done { color:var(--primary); }
+        .crossed { text-decoration:line-through; color:var(--dark); }
+        .late { font-size:8px; color:var(--danger); font-weight:600; background:rgba(239,68,68,.2); padding:2px 5px; border-radius:4px; margin-left:6px; }
+        .note-txt { flex:1; margin-right:6px; word-break:break-word; }
+        .note-dt { font-size:9px; color:var(--dark); margin-top:3px; }
+        .empty { font-size:11px; color:var(--dark); font-style:italic; padding:4px 0; }
+
+        .actions { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
+        .act { padding:9px 6px; border-radius:8px; border:none; font-size:10px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:3px; }
+        .act span:first-child { font-size:16px; }
+        .act-m { background:rgba(0,212,170,.15); color:var(--primary); }
+        .act-e { background:rgba(8,145,178,.15); color:var(--secondary); }
+        .act-d { background:rgba(239,68,68,.15); color:var(--danger); }
+
+        .empty-state { text-align:center; padding:50px 20px; }
+        .empty-state .icon { font-size:56px; margin-bottom:12px; }
+        .empty-state h2 { font-size:17px; margin-bottom:6px; }
+        .empty-state p { font-size:13px; color:var(--muted); }
+
+        .fab { position:fixed; bottom:20px; right:16px; width:52px; height:52px; border-radius:14px; background:var(--primary); border:none; font-size:26px; color:var(--bg); box-shadow:0 4px 16px rgba(0,212,170,.4); z-index:1000; }
+
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:2000; align-items:flex-end; justify-content:center; }
+        .modal.open { display:flex; }
+        .modal-box { background:var(--card); border-radius:20px 20px 0 0; padding:18px 16px 28px; width:100%; max-width:440px; max-height:82vh; overflow-y:auto; }
+        .modal-bar { width:32px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 14px; }
+        .modal-title { font-size:17px; font-weight:700; margin-bottom:14px; text-align:center; }
+        .inp { background:var(--input); border-radius:10px; padding:12px 14px; font-size:15px; color:var(--text); margin-bottom:8px; border:1px solid var(--border); width:100%; font-family:inherit; }
+        .inp:focus { outline:none; border-color:var(--primary); }
+        .inp::placeholder { color:var(--dark); }
+        .inp-row { display:flex; align-items:center; margin-bottom:8px; gap:10px; }
+        .inp-lbl { flex:1; font-size:13px; color:var(--muted); }
+        .inp-sm { width:90px; flex:none; margin:0; text-align:center; }
+        textarea.inp { min-height:90px; resize:none; }
+        input[type="date"] { color-scheme:dark; }
+        .modal-btns { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+        .m-btn { padding:12px; border-radius:10px; border:none; font-size:14px; font-weight:600; }
+        .m-cancel { background:var(--input); color:var(--muted); border:1px solid var(--border); }
+        .m-ok { background:var(--primary); color:var(--bg); }
+
+        .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:var(--card); border:1px solid var(--primary); padding:10px 18px; border-radius:10px; font-size:13px; z-index:3000; display:none; }
+        .toast.show { display:block; animation:fade 2s; }
+        @keyframes fade { 0%,100%{opacity:0} 10%,90%{opacity:1} }
+
+        .install-banner { display:none; position:fixed; bottom:80px; left:14px; right:14px; background:var(--card); border:1px solid var(--primary); border-radius:12px; padding:12px 14px; z-index:999; }
+        .install-banner.show { display:flex; align-items:center; gap:10px; }
+        .install-banner-txt { flex:1; }
+        .install-banner-txt strong { font-size:13px; display:block; }
+        .install-banner-txt span { font-size:11px; color:var(--muted); }
+        .install-btn { background:var(--primary); color:var(--bg); border:none; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:600; }
+        .install-close { color:var(--dark); font-size:18px; padding:4px; }
+
+        .c-ph{color:#00d4aa} .c-kh{color:#0891b2} .c-gh{color:#8b5cf6} .c-no2{color:#ef4444} .c-no3{color:#f59e0b} .c-nh3{color:#ec4899} .c-t{color:#06b6d4}
     </style>
-  </head>
-  <body>
-    <main>
-      <h1>Basille skeleton</h1>
-      <p>Pré-prod labo — pipeline lint / test / Trivy / staging auto / prod manuelle.</p>
-    </main>
-  </body>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <div class="header-row">
+            <div><h1>🐠 Aquarien</h1><p id="cnt">0 Becken</p></div>
+            <button class="backup-btn" onclick="backup()">💾 Backup</button>
+        </div>
+    </div>
+    <div class="content" id="content">
+        <div class="empty-state" id="empty"><div class="icon">🐟</div><h2>Keine Aquarien</h2><p>Tippe + zum Starten</p></div>
+        <div id="list"></div>
+    </div>
+    <button class="fab" onclick="modal('add')">+</button>
+    <div class="install-banner" id="install-banner">
+        <div class="install-banner-txt"><strong>App installieren</strong><span>Zum Homescreen hinzufügen</span></div>
+        <button class="install-btn" id="install-btn">Installieren</button>
+        <span class="install-close" onclick="hideInstall()">×</span>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="m-add"><div class="modal-box"><div class="modal-bar"></div><h2 class="modal-title">Neues Aquarium</h2>
+<input class="inp" id="i-name" placeholder="Name"><input type="number" class="inp" id="i-liter" placeholder="Liter" inputmode="numeric">
+<div class="modal-btns"><button class="m-btn m-cancel" onclick="close('add')">Abbrechen</button><button class="m-btn m-ok" onclick="addAq()">OK</button></div></div></div>
+
+<div class="modal" id="m-edit"><div class="modal-box"><div class="modal-bar"></div><h2 class="modal-title">Bearbeiten</h2>
+<input class="inp" id="e-name" placeholder="Name"><input type="number" class="inp" id="e-liter" placeholder="Liter" inputmode="numeric">
+<div class="modal-btns"><button class="m-btn m-cancel" onclick="close('edit')">Abbrechen</button><button class="m-btn m-ok" onclick="saveAq()">Speichern</button></div></div></div>
+
+<div class="modal" id="m-meas"><div class="modal-box"><div class="modal-bar"></div><h2 class="modal-title">Messung</h2>
+<div class="inp-row"><span class="inp-lbl">pH</span><input type="number" step="0.1" class="inp inp-sm" id="v-ph" inputmode="decimal"></div>
+<div class="inp-row"><span class="inp-lbl">KH (°dH)</span><input type="number" step="0.1" class="inp inp-sm" id="v-kh" inputmode="decimal"></div>
+<div class="inp-row"><span class="inp-lbl">GH (°dH)</span><input type="number" step="0.1" class="inp inp-sm" id="v-gh" inputmode="decimal"></div>
+<div class="inp-row"><span class="inp-lbl">Nitrit (mg/l)</span><input type="number" step="0.01" class="inp inp-sm" id="v-no2" inputmode="decimal"></div>
+<div class="inp-row"><span class="inp-lbl">Nitrat (mg/l)</span><input type="number" step="1" class="inp inp-sm" id="v-no3" inputmode="decimal"></div>
+<div class="inp-row"><span class="inp-lbl">Ammoniak</span><input type="number" step="0.01" class="inp inp-sm" id="v-nh3" inputmode="decimal"></div>
+<div class="inp-row"><span class="inp-lbl">Temp (°C)</span><input type="number" step="0.1" class="inp inp-sm" id="v-t" inputmode="decimal"></div>
+<div class="modal-btns"><button class="m-btn m-cancel" onclick="close('meas')">Abbrechen</button><button class="m-btn m-ok" onclick="addMeas()">Speichern</button></div></div></div>
+
+<div class="modal" id="m-fish"><div class="modal-box"><div class="modal-bar"></div><h2 class="modal-title">Fisch</h2>
+<input class="inp" id="f-art" placeholder="Art"><input type="number" class="inp" id="f-n" placeholder="Anzahl" inputmode="numeric">
+<div class="modal-btns"><button class="m-btn m-cancel" onclick="close('fish')">Abbrechen</button><button class="m-btn m-ok" onclick="addFish()">OK</button></div></div></div>
+
+<div class="modal" id="m-wc"><div class="modal-box"><div class="modal-bar"></div><h2 class="modal-title">Wasserwechsel</h2>
+<input type="date" class="inp" id="wc-date">
+<div class="modal-btns"><button class="m-btn m-cancel" onclick="close('wc')">Abbrechen</button><button class="m-btn m-ok" onclick="addWc()">Planen</button></div></div></div>
+
+<div class="modal" id="m-note"><div class="modal-box"><div class="modal-bar"></div><h2 class="modal-title">Notiz</h2>
+<textarea class="inp" id="n-txt" placeholder="Dünger, CO2, etc..."></textarea>
+<div class="modal-btns"><button class="m-btn m-cancel" onclick="close('note')">Abbrechen</button><button class="m-btn m-ok" onclick="addNote()">OK</button></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const K='AquaData3';
+let D=[],sel=null,param='ph',charts={},deferredPrompt=null;
+const P={ph:{l:'pH',c:'#00d4aa'},kh:{l:'KH',c:'#0891b2'},gh:{l:'GH',c:'#8b5cf6'},no2:{l:'NO₂',c:'#ef4444'},no3:{l:'NO₃',c:'#f59e0b'},nh3:{l:'NH₃',c:'#ec4899'},t:{l:'°C',c:'#06b6d4'}};
+
+document.addEventListener('DOMContentLoaded',()=>{load();render();setDate();setupPWA()});
+
+function setupPWA(){if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW:',e))}window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('install-banner').classList.add('show')});document.getElementById('install-btn').addEventListener('click',async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;hideInstall()}})}
+function hideInstall(){document.getElementById('install-banner').classList.remove('show')}
+
+function load(){try{const s=localStorage.getItem(K);if(s)D=JSON.parse(s)}catch(e){D=[]}}
+function save(){try{localStorage.setItem(K,JSON.stringify(D));msg('Gespeichert ✓')}catch(e){msg('Fehler!')}}
+function backup(){const b=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='aqua-backup.json';a.click();msg('Backup erstellt')}
+function msg(t){const e=document.getElementById('toast');e.textContent=t;e.classList.remove('show');void e.offsetWidth;e.classList.add('show')}
+function modal(n){document.getElementById('m-'+n).classList.add('open')}
+function close(n){document.getElementById('m-'+n).classList.remove('open')}
+function setDate(){const d=new Date();d.setDate(d.getDate()+7);document.getElementById('wc-date').value=d.toISOString().split('T')[0]}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function fdt(iso){const d=new Date(iso);return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+function fsh(iso){const d=new Date(iso);return d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'})}
+
+function toggle(id){const c=document.querySelector(`[data-id="${id}"]`);const was=c.classList.contains('open');document.querySelectorAll('.card').forEach(x=>x.classList.remove('open'));if(!was){c.classList.add('open');setTimeout(()=>chart(id),50)}}
+
+function addAq(){const n=document.getElementById('i-name').value.trim(),l=parseInt(document.getElementById('i-liter').value);if(!n||!l)return msg('Ausfüllen!');D.push({id:Date.now()+'',name:n,liter:l,fish:[],meas:[],wc:[],notes:[]});save();render();close('add');document.getElementById('i-name').value='';document.getElementById('i-liter').value=''}
+function editAq(id){const a=D.find(x=>x.id===id);if(!a)return;sel=id;document.getElementById('e-name').value=a.name;document.getElementById('e-liter').value=a.liter;modal('edit')}
+function saveAq(){const a=D.find(x=>x.id===sel);if(!a)return;const n=document.getElementById('e-name').value.trim(),l=parseInt(document.getElementById('e-liter').value);if(!n||!l)return msg('Ausfüllen!');a.name=n;a.liter=l;save();render();close('edit')}
+function delAq(id){if(!confirm('Löschen?'))return;D=D.filter(x=>x.id!==id);save();render()}
+
+function openMeas(id){sel=id;['ph','kh','gh','no2','no3','nh3','t'].forEach(p=>document.getElementById('v-'+p).value='');modal('meas')}
+function addMeas(){const a=D.find(x=>x.id===sel);if(!a)return;const m={id:Date.now()+'',date:new Date().toISOString(),ph:parseFloat(document.getElementById('v-ph').value)||null,kh:parseFloat(document.getElementById('v-kh').value)||null,gh:parseFloat(document.getElementById('v-gh').value)||null,no2:parseFloat(document.getElementById('v-no2').value)||null,no3:parseFloat(document.getElementById('v-no3').value)||null,nh3:parseFloat(document.getElementById('v-nh3').value)||null,t:parseFloat(document.getElementById('v-t').value)||null};if(![m.ph,m.kh,m.gh,m.no2,m.no3,m.nh3,m.t].some(v=>v!==null))return msg('Min. 1 Wert!');a.meas.push(m);save();render();close('meas');setTimeout(()=>{toggle(sel);chart(sel)},50)}
+
+function openFish(id){sel=id;document.getElementById('f-art').value='';document.getElementById('f-n').value='';modal('fish')}
+function addFish(){const a=D.find(x=>x.id===sel);if(!a)return;const art=document.getElementById('f-art').value.trim(),n=parseInt(document.getElementById('f-n').value);if(!art||!n)return msg('Ausfüllen!');a.fish.push({id:Date.now()+'',art,n});save();render();close('fish')}
+function delFish(aid,fid){const a=D.find(x=>x.id===aid);if(a){a.fish=a.fish.filter(f=>f.id!==fid);save();render()}}
+
+function openWc(id){sel=id;setDate();modal('wc')}
+function addWc(){const a=D.find(x=>x.id===sel);if(!a)return;const d=document.getElementById('wc-date').value;if(!d)return msg('Datum!');a.wc.push({id:Date.now()+'',date:new Date(d).toISOString(),done:false});save();render();close('wc')}
+function togWc(aid,wid){const a=D.find(x=>x.id===aid);if(a){const w=a.wc.find(x=>x.id===wid);if(w)w.done=!w.done;save();render()}}
+function delWc(aid,wid){const a=D.find(x=>x.id===aid);if(a){a.wc=a.wc.filter(w=>w.id!==wid);save();render()}}
+
+function openNote(id){sel=id;document.getElementById('n-txt').value='';modal('note')}
+function addNote(){const a=D.find(x=>x.id===sel);if(!a)return;const t=document.getElementById('n-txt').value.trim();if(!t)return msg('Text!');a.notes.push({id:Date.now()+'',txt:t,date:new Date().toISOString()});save();render();close('note')}
+function delNote(aid,nid){const a=D.find(x=>x.id===aid);if(a){a.notes=a.notes.filter(n=>n.id!==nid);save();render()}}
+
+function selP(aid,p){param=p;document.querySelectorAll(`[data-id="${aid}"] .tab`).forEach(t=>t.classList.toggle('on',t.dataset.p===p));chart(aid)}
+function chart(aid){const a=D.find(x=>x.id===aid);if(!a)return;const cv=document.getElementById('ch-'+aid);if(!cv)return;const ctx=cv.getContext('2d');if(charts[aid])charts[aid].destroy();const ms=a.meas.filter(m=>m[param]!==null).slice(-10);if(ms.length<2){ctx.clearRect(0,0,cv.width,cv.height);return}charts[aid]=new Chart(ctx,{type:'line',data:{labels:ms.map(m=>{const d=new Date(m.date);return d.getDate()+'.'+(d.getMonth()+1)}),datasets:[{data:ms.map(m=>m[param]),borderColor:P[param].c,backgroundColor:P[param].c+'20',borderWidth:2,fill:true,tension:.4,pointRadius:3,pointBackgroundColor:P[param].c}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e3a5f'},ticks:{color:'#64748b',font:{size:9}}},y:{grid:{color:'#1e3a5f'},ticks:{color:'#64748b',font:{size:9}}}}}})}
+
+function render(){document.getElementById('cnt').textContent=D.length+' Becken';const em=document.getElementById('empty'),ls=document.getElementById('list');if(D.length===0){em.style.display='block';ls.innerHTML='';return}em.style.display='none';ls.innerHTML=D.map(a=>{const last=a.meas[a.meas.length-1];const next=a.wc.filter(w=>!w.done).sort((x,y)=>new Date(x.date)-new Date(y.date))[0];const tf=a.fish.reduce((s,f)=>s+f.n,0);let stats='';if(last)Object.keys(P).forEach(p=>{if(last[p]!==null)stats+=`<div class="stat"><div class="stat-val c-${p}">${last[p]}</div><div class="stat-lbl">${P[p].l}</div></div>`});return`<div class="card" data-id="${a.id}"><div class="card-head" onclick="toggle('${a.id}')"><div class="card-left"><span class="arrow">▶</span><div><div class="aq-name">${esc(a.name)}</div><div class="aq-info">${a.liter}L · ${tf} Fische</div></div></div>${next?`<span class="badge">💧 ${fsh(next.date)}</span>`:''}</div><div class="card-body">${last?`<div class="stats"><div class="sec-head"><span class="sec-title">📊 Messung</span></div><div class="stats-date">${fdt(last.date)}</div><div class="stats-grid">${stats}</div></div>`:''}${a.meas.length>=2?`<div class="chart-sec"><div class="sec-head"><span class="sec-title">📈 Verlauf</span></div><div class="tabs">${Object.keys(P).map(p=>`<button class="tab ${p==='ph'?'on':''}" data-p="${p}" onclick="selP('${a.id}','${p}')">${P[p].l}</button>`).join('')}</div><div class="chart-box"><canvas id="ch-${a.id}"></canvas>${a.meas.filter(m=>m.ph!==null).length<2?'<div class="no-data">Nicht genug Daten</div>':''}</div></div>`:''}<div class="sec"><div class="sec-head"><span class="sec-title">🐟 Fische</span><button class="add-btn" onclick="openFish('${a.id}')">+</button></div>${a.fish.length===0?'<p class="empty">Keine</p>':a.fish.map(f=>`<div class="item"><span>${esc(f.art)} <span class="fish-n">×${f.n}</span></span><span class="del" onclick="delFish('${a.id}','${f.id}')">✕</span></div>`).join('')}</div><div class="sec"><div class="sec-head"><span class="sec-title">💧 Wasserwechsel</span><button class="add-btn" onclick="openWc('${a.id}')">+</button></div>${a.wc.length===0?'<p class="empty">Keine</p>':a.wc.sort((x,y)=>new Date(x.date)-new Date(y.date)).slice(0,5).map(w=>{const late=!w.done&&new Date(w.date)<new Date();return`<div class="item"><div style="display:flex;align-items:center;flex:1" onclick="togWc('${a.id}','${w.id}')"><span class="chk ${w.done?'done':''}">${w.done?'✓':'○'}</span><span class="${w.done?'crossed':''}">${fsh(w.date)}</span>${late?'<span class="late">Überfällig</span>':''}</div><span class="del" onclick="delWc('${a.id}','${w.id}')">✕</span></div>`}).join('')}</div><div class="sec"><div class="sec-head"><span class="sec-title">📝 Notizen</span><button class="add-btn" onclick="openNote('${a.id}')">+</button></div>${a.notes.length===0?'<p class="empty">Keine</p>':a.notes.sort((x,y)=>new Date(y.date)-new Date(x.date)).slice(0,5).map(n=>`<div class="item" style="align-items:flex-start"><div class="note-txt">${esc(n.txt)}<div class="note-dt">${new Date(n.date).toLocaleDateString('de-DE')}</div></div><span class="del" onclick="delNote('${a.id}','${n.id}')">✕</span></div>`).join('')}</div><div class="actions"><button class="act act-m" onclick="openMeas('${a.id}')"><span>📊</span>Messung</button><button class="act act-e" onclick="editAq('${a.id}')"><span>✏️</span>Bearbeiten</button><button class="act act-d" onclick="delAq('${a.id}')"><span>🗑️</span>Löschen</button></div></div></div>`}).join('')}
+</script>
+</body>
 </html>
